@@ -1,6 +1,12 @@
 Python-ThermalPrinter
 =====================
 
+TODO
+
 ## Table of contents
 
-TODO
+- [Licensing](#licensing)
+
+## Licensing
+
+Please see the file called LICENSE.
