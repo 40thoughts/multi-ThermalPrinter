@@ -35,14 +35,13 @@ class ThermalPrinter(object):
     # pixels with more color value (average for multiple channels) are counted as white
     # tweak this if your images appear too black or too white
     black_threshold = 48
-    # pixels with less alpha than this are counted as white
-    alpha_threshold = 127
 
     printer = None
 
     _ESC = '\x1b'                 # Oftenly used character
     _ChangeTable = _ESC + '\x74'  # String sent to change the character table
     _DefaultTable = chr(19)       # Default character table (page19), read further for more details
+    _lineWidth = 384;            # Line width in pixels (for pictures)
 
     def __init__(self, serialport=SERIALPORT):
         self.printer = serial.Serial(serialport, self.BAUDRATE, timeout=self.TIMEOUT, bytesize=serial.EIGHTBITS, rtscts=True, dsrdtr=True)
@@ -80,10 +79,22 @@ class ThermalPrinter(object):
 
         time.sleep(0.2)
 
+        print('Printer successfully initialized')
+
 ############################################
 
     def reset(self):
         self.printer.write(self._ESC + '\x40')
+
+    def check(self):
+        self.printer.write(self._ESC + '\x76\x00')
+        n = self.printer.inWaiting()
+        data = self.printer.read(1)
+        data = data + self.printer.read(n)
+        if data == chr(36) :
+            print('No more paper !')
+        if data != chr(32) :
+            self.check()
 
     def linefeed(self, n=1):
         line = '\x0a' * n
@@ -231,16 +242,6 @@ class ThermalPrinter(object):
         line = line.replace('\\3','\xfc')  # power 3
         return line
 
-    def check(self):
-        self.printer.write(self._ESC + '\x76\x00')
-        n = self.printer.inWaiting()
-        data = self.printer.read(1)
-        data = data + self.printer.read(n)
-        if data == chr(36) :
-            print('No more paper !')
-        if data != chr(32) :
-            self.check()
-
     def print_markup(self, markup):
         """ Print text with markup for styling.
 
@@ -284,49 +285,31 @@ class ThermalPrinter(object):
     def convert_pixel_array_to_binary(self, pixels, w, h):
         """ Convert the pixel array into a black and white plain list of 1's and 0's
             width is enforced to 384 and padded with white if needed. """
-        black_and_white_pixels = [1] * 384 * h
-        if w > 384:
-            print "Bitmap width too large: %s. Needs to be under 384" % w
+        black_and_white_pixels = [1] * self._lineWidth * h
+        if w > self._lineWidth:
+            print "Bitmap width too large : %s. Needs to be under %s" % (w, self._lineWidth)
             return False
-        elif w < 384:
-            print "Bitmap under 384 (%s), padding the rest with white" % w
+        elif w < self._lineWidth:
+            print "Bitmap width under %s (%s), padding the rest with white" % (self._lineWidth, w)
 
         print "Bitmap size", w
 
         if type(pixels[0]) == int: # single channel
-            print " => single channel"
+            print " => Printing picture"
             for i, p in enumerate(pixels):
                 if p < self.black_threshold:
-                    black_and_white_pixels[i % w + i / w * 384] = 0
+                    black_and_white_pixels[i % w + i / w * self._lineWidth] = 0
                 else:
-                    black_and_white_pixels[i % w + i / w * 384] = 1
-        elif type(pixels[0]) in (list, tuple) and len(pixels[0]) == 3: # RGB
-            print " => RGB channel"
-            for i, p in enumerate(pixels):
-                if sum(p[0:2]) / 3.0 < self.black_threshold:
-                    black_and_white_pixels[i % w + i / w * 384] = 0
-                else:
-                    black_and_white_pixels[i % w + i / w * 384] = 1
-        elif type(pixels[0]) in (list, tuple) and len(pixels[0]) == 4: # RGBA
-            print " => RGBA channel"
-            for i, p in enumerate(pixels):
-                if sum(p[0:2]) / 3.0 < self.black_threshold and p[3] > self.alpha_threshold:
-                    black_and_white_pixels[i % w + i / w * 384] = 0
-                else:
-                    black_and_white_pixels[i % w + i / w * 384] = 1
+                    black_and_white_pixels[i % w + i / w * self._lineWidth] = 1
         else:
-            print "Unsupported pixels array type. Please send plain list (single channel, RGB or RGBA)"
-            print "Type pixels[0]", type(pixels[0]), "haz", pixels[0]
+            print "Unsupported pixels array type."
             return False
 
         return black_and_white_pixels
 
 
     def print_bitmap(self, pixels, w, h, output_png=False):
-        """ Best to use images that have a pixel width of 384 as this corresponds
-            to the printer row width. 
-            
-            pixels = a pixel array. RGBA, RGB, or one channel plain list of values (ranging from 0-255).
+        """ pixels = a pixel array. RGBA, RGB, or one channel plain list of values (ranging from 0-255).
             w = width of image
             h = height of image
             if "output_png" is set, prints an "print_bitmap_output.png" in the same folder using the same
@@ -342,8 +325,8 @@ class ThermalPrinter(object):
         """
         counter = 0
         if output_png:
-            import Image, ImageDraw
-            test_img = Image.new('RGB', (384, h))
+            import ImageDraw
+            test_img = Image.new('RGB', (self._lineWidth, h))
             draw = ImageDraw.Draw(test_img)
 
         black_and_white_pixels = self.convert_pixel_array_to_binary(pixels, w, h)        
@@ -362,10 +345,10 @@ class ThermalPrinter(object):
                     # check if this is black
                     if pixel_value == 0:
                         byt += 1 << (7 - xx)
-                        if output_png: draw.point((counter % 384, round(counter / 384)), fill=(0, 0, 0))
+                        if output_png: draw.point((counter % self._lineWidth, round(counter / self._lineWidth)), fill=(0, 0, 0))
                     # it's white
                     else:
-                        if output_png: draw.point((counter % 384, round(counter / 384)), fill=(255, 255, 255))
+                        if output_png: draw.point((counter % self._lineWidth, round(counter / self._lineWidth)), fill=(255, 255, 255))
 
                 print_bytes.append(byt)
         
@@ -492,14 +475,6 @@ class ThermalPrinter(object):
                     i = True
 
     def main(self):
-        if args.debug:
-            import Image
-            image_file = Image.open("ma7.jpg")
-            image_file.thumbnail([384, 1000], Image.ANTIALIAS)
-            image_file = image_file.convert('1')
-            image_file.save('result.png')
-            print "DEBUG"
-
         if args.initialize:
             self.initialize_printer()
 
@@ -562,13 +537,26 @@ class ThermalPrinter(object):
             self.linefeed()
 
         if args.file:
+            import Image, io
+            import urllib2 as urllib
             inputfile = args.file
-            cmd="../bash/imageConvert.sh " + inputfile
-            os.system(cmd)
-            import Image, ImageDraw
-            i = Image.open("/tmp/printer/output.jpg")
-            data = list(i.getdata())
-            w, h = i.size
+
+            sock = urllib.urlopen(args.file)
+            img_file = io.BytesIO(sock.read())
+            sock.close()
+            img = Image.open(img_file)
+            w, h = img.size
+            if h < w:
+                img = img.rotate(90)
+
+            ratio = (self._lineWidth / float(img.size[0]))
+            height = int((float(img.size[1]) * float(ratio)))
+            if img.size[0] > self._lineWidth:
+                img = img.resize((self._lineWidth, height), Image.ANTIALIAS)
+
+            img = img.convert('1')
+            data = list(img.getdata())
+            w, h = img.size
             self.print_bitmap(data, w, h, False)
 
         if args.close:
@@ -641,10 +629,10 @@ if __name__ == '__main__':
                         action="store",
                         dest="code",
                         help="CODE 128")
-    parser.add_argument("-b", "--picture",
+    parser.add_argument("-u", "--url",
                         action="store",
                         dest="file",
-                        help="Print a picture")
+                        help="Print a picture from an url address")
     parser.add_argument("-d", "--test",
                         action="store_true",
                         help="Print test page")
