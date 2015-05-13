@@ -546,8 +546,9 @@ class ThermalPrinter(object):
             sock.close()
             img = Image.open(img_file)
             w, h = img.size
-            if h < w:
-                img = img.rotate(90)
+            if img.size[0] > self._lineWidth:
+                if h < w:
+                    img = img.rotate(270)
 
             ratio = (self._lineWidth / float(img.size[0]))
             height = int((float(img.size[1]) * float(ratio)))
