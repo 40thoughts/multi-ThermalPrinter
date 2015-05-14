@@ -532,6 +532,9 @@ class ThermalPrinter(object):
         elif args.terminal:
             self.terminal()
 
+        if args.newline:
+            self.linefeed()
+
         if args.separation:
             self.separator()
             self.linefeed()
@@ -581,6 +584,9 @@ if __name__ == '__main__':
                         action="store",
                         dest="text",
                         help="Line to print")
+    parser.add_argument("-n", "--newline",
+                        action="store_true",
+                        help="Print an empty line")
     parser.add_argument("-t", "--terminal",
                         action="store_true",
                         help="Open a terminal")
