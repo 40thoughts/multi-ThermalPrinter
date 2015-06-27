@@ -41,7 +41,7 @@ class ThermalPrinter(object):
     _ESC = '\x1b'                 # Oftenly used character
     _ChangeTable = _ESC + '\x74'  # String sent to change the character table
     _DefaultTable = chr(19)       # Default character table (page19), read further for more details
-    _lineWidth = 384;            # Line width in pixels (for pictures)
+    _lineWidth = 384;             # Line width in pixels (for pictures)
 
     def __init__(self, serialport=SERIALPORT):
         self.printer = serial.Serial(serialport, self.BAUDRATE, timeout=self.TIMEOUT, bytesize=serial.EIGHTBITS, rtscts=True, dsrdtr=True)
@@ -183,31 +183,31 @@ class ThermalPrinter(object):
         self.printer.write(msg)
 
     def characters_conv(self, msg):
-        line = msg.replace('\\B',self._ESC + '\x45\x01')        # Bold ON
-        line = line.replace('\\b',self._ESC + '\x45\x00')       # Bold OFF
-        line = line.replace('\\U',self._ESC + '\x2d\x01')       # Underline ON
-        line = line.replace('\\u',self._ESC + '\x2d\x00')       # Underline OFF
-        line = line.replace('\\S',self._ESC + '\x21\x42')       # Strike ON
-        line = line.replace('\\s',self._ESC + '\x21\x00')       # Strike OFF
-        line = line.replace('\\F',self._ESC + '\x21\x01')       # Font B ON
-        line = line.replace('\\f',self._ESC + '\x21\x00')       # Font B OFF
-        line = line.replace('\\H','\x1b\x21' + chr(16))       	# Long font ON
-        line = line.replace('\\h','\x1b\x21' + chr(0))       	# Long font OFF
-        line = line.replace('\\W','\x1b\x21' + chr(32))       	# Long font ON
-        line = line.replace('\\w','\x1b\x21' + chr(0))       	# Long font OFF
-        line = line.replace('\\G','\x1b\x21' + chr(48))       	# Great font ON
-        line = line.replace('\\g','\x1b\x21' + chr(0))       	# Great font OFF
-#        line = line.replace('\\W',self._ESC + '\x0e\x02')       # Wide font ON
-#        line = line.replace('\\w',self._ESC + '\x14\x00')       # Wide font OFF
-        line = line.replace('\\D',self._ESC + '\x7b\x01')       # Upside/down ON
-        line = line.replace('\\d',self._ESC + '\x7b\x00')       # Upside/down OFF
-        line = line.replace('\\I','\x1d\x42\x01')               # Colors reverse ON
-        line = line.replace('\\i','\x1d\x42\x00')               # Colors reverse OFF
-        line = line.replace('\\L',self._ESC + '\x61\x00')       # Align : Left
-        line = line.replace('\\C',self._ESC + '\x61\x01')       # Align : Center
-        line = line.replace('\\R',self._ESC + '\x61\x02')       # Align : Right
-        line = line.replace('\\t','\x09')                       # Next Tab position
-        line = line.replace('\\n','\x0a')                       # New line
+        line = msg.replace('\\B',self._ESC + '\x45\x01')        # \B : Bold ON
+        line = line.replace('\\b',self._ESC + '\x45\x00')       # \b : Bold OFF
+        line = line.replace('\\U',self._ESC + '\x2d\x01')       # \U : Underline ON
+        line = line.replace('\\u',self._ESC + '\x2d\x00')       # \u : Underline OFF
+        line = line.replace('\\S',self._ESC + '\x21\x42')       # \S : Strike ON		<- TODO (not sure about the code, not much details)
+        line = line.replace('\\s',self._ESC + '\x21\x00')       # \s : Strike OFF		<- TODO (not sure about the code, not much details)
+        line = line.replace('\\F',self._ESC + '\x21\x01')       # \F : Font B ON
+        line = line.replace('\\f',self._ESC + '\x21\x00')       # \f : Font B OFF
+        line = line.replace('\\H','\x1b\x21' + chr(16))       	# \H : Long font ON		<- TODO (not working)
+        line = line.replace('\\h','\x1b\x21' + chr(0))       	# \h : Long font OFF		<- TODO (not working)
+        line = line.replace('\\W','\x1b\x21' + chr(32))       	# \W : Wide font ON
+        line = line.replace('\\w','\x1b\x21' + chr(0))       	# \w : Wide font OFF
+        line = line.replace('\\G','\x1b\x21' + chr(48))       	# \G : Great font ON		<- TODO (only wide)
+        line = line.replace('\\g','\x1b\x21' + chr(0))       	# \g : Great font OFF		<- TODO (only wide)
+#        line = line.replace('\\W',self._ESC + '\x0e\x02')       # \W : Wide font ON
+#        line = line.replace('\\w',self._ESC + '\x14\x00')       # \w : Wide font OFF
+        line = line.replace('\\D',self._ESC + '\x7b\x01')       # \D : Upside/down ON
+        line = line.replace('\\d',self._ESC + '\x7b\x00')       # \d : Upside/down OFF
+        line = line.replace('\\I','\x1d\x42\x01')               # \I : Colors reverse ON
+        line = line.replace('\\i','\x1d\x42\x00')               # \i : Colors reverse OFF
+        line = line.replace('\\L',self._ESC + '\x61\x00')       # \L : Align : Left
+        line = line.replace('\\C',self._ESC + '\x61\x01')       # \C : Align : Center
+        line = line.replace('\\R',self._ESC + '\x61\x02')       # \R : Align : Right
+        line = line.replace('\\t','\x09')                       # \t : Next Tab position	<- TODO (not working)
+        line = line.replace('\\n','\x0a')                       # \n : New line
 
         line = line.replace('É','\x90')
         line = line.replace('é','\x82')
